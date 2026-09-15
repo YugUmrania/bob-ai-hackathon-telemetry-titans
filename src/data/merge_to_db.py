@@ -23,8 +23,15 @@ def load_table(conn: sqlite3.Connection, csv_name: str, table_name: str) -> None
         print(f"  [skip] {csv_path} not found")
         return
     df = pd.read_csv(csv_path)
-    df.to_sql(table_name, conn, if_exists="replace", index=False)
-    row_count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+
+    # Use DELETE + append instead of "replace" so that pandas does NOT drop
+    # and recreate the table.  Dropping would erase the PRIMARY KEY defined in
+    # schema.sql, which breaks the SQLAlchemy FK from risk_scores → assets.
+    conn.execute(f"DELETE FROM [{table_name}]")
+    conn.commit()
+    df.to_sql(table_name, conn, if_exists="append", index=False)
+
+    row_count = conn.execute(f"SELECT COUNT(*) FROM [{table_name}]").fetchone()[0]
     print(f"  [loaded] {table_name}: {row_count:,} rows")
 
 
@@ -32,6 +39,13 @@ def merge_all() -> None:
     print("=" * 60)
     print("Merging data into SQLite:", DB_PATH)
     print("=" * 60)
+
+    # Delete the DB file so schema.sql always runs on a clean slate.
+    # This guarantees assets.asset_id gets its PRIMARY KEY, which is required
+    # by SQLAlchemy's ForeignKey on risk_scores / shap_values / maintenance_tasks.
+    if DB_PATH.exists():
+        DB_PATH.unlink()
+        print("  [reset] Deleted existing DB — recreating from schema.sql")
 
     conn = sqlite3.connect(str(DB_PATH))
     create_schema(conn)

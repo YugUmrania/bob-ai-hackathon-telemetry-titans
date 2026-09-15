@@ -23,13 +23,17 @@ const riskRadii: Record<RiskLevel, number> = {
 };
 
 export function RiskMarker({ asset, isSelected, onClick }: RiskMarkerProps) {
-  const color = riskColors[asset.risk_level];
-  const baseRadius = riskRadii[asset.risk_level];
+  const lat = Number(asset?.location?.lat);
+  const lng = Number(asset?.location?.lng);
+  if (isNaN(lat) || isNaN(lng)) return null;
+
+  const color = riskColors[asset.risk_level] ?? '#22c55e';
+  const baseRadius = riskRadii[asset.risk_level] ?? 8;
   const radius = isSelected ? baseRadius + 4 : baseRadius;
 
   return (
     <CircleMarker
-      center={[asset.location.lat, asset.location.lng]}
+      center={[lat, lng]}
       radius={radius}
       pathOptions={{
         color: isSelected ? '#60a5fa' : color,

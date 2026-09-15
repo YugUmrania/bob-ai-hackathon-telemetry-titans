@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import { RiskBadge, StatusBadge } from '../components/ui/StatusBadge';
 import { RiskGauge } from '../components/charts/RiskGauge';
 import { SensorTrendChart } from '../components/charts/SensorTrendChart';
 import { ShapBarChart } from '../components/charts/ShapBarChart';
+import type { SensorReading, ShapFactor } from '../types';
 
 export function AssetDetail() {
   const { assetId } = useParams<{ assetId: string }>();
@@ -24,7 +25,32 @@ export function AssetDetail() {
   const assets = useAppStore((s) => s.assets);
   const tasks = useAppStore((s) => s.maintenanceTasks);
 
+  const [sensors, setSensors] = useState<SensorReading[]>([]);
+  const [shapFactors, setShapFactors] = useState<ShapFactor[]>([]);
+
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (!assetId) return;
+    Promise.all([
+      fetch(`/api/v1/assets/${assetId}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/v1/assets/${assetId}/sensors?days=30`).then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(([assetData, sensorData]) => {
+        if (assetData?.shap_values) {
+          setShapFactors(
+            assetData.shap_values.map((s: { feature: string; contribution: number }) => ({
+              name: s.feature,
+              value: s.contribution,
+            })),
+          );
+        }
+        if (Array.isArray(sensorData)) {
+          setSensors(sensorData);
+        }
+      })
+      .catch((err) => console.warn('[AssetDetail] Failed to load sensors/shap:', err));
+  }, [assetId]);
 
   if (isLoading) return <LoadingSpinner size="lg" label="Loading asset…" />;
 
@@ -45,7 +71,9 @@ export function AssetDetail() {
     );
   }
 
-  const latestReading = asset.sensor_readings.at(-1);
+  const activeReadings = sensors.length > 0 ? sensors : asset.sensor_readings;
+  const activeShap = shapFactors.length > 0 ? shapFactors : asset.shap_factors;
+  const latestReading = activeReadings.at(-1);
   const assetTasks = tasks.filter((t) => t.asset_id === asset.id);
 
   const priorityBadge: Record<string, string> = {
@@ -221,7 +249,7 @@ export function AssetDetail() {
             <Activity size={15} className="text-brand-400" />
             Sensor Trends (30-day)
           </h2>
-          <SensorTrendChart readings={asset.sensor_readings} height={260} />
+          <SensorTrendChart readings={activeReadings} height={260} />
         </div>
 
         {/* SHAP risk factors */}
@@ -233,7 +261,7 @@ export function AssetDetail() {
           <p className="text-xs text-slate-500 mb-4">
             AI-attributed contribution to risk score
           </p>
-          <ShapBarChart factors={asset.shap_factors} height={200} />
+          <ShapBarChart factors={activeShap} height={200} />
         </div>
       </div>
 

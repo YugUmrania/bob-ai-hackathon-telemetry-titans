@@ -36,7 +36,8 @@ CREATE INDEX IF NOT EXISTS idx_sensor_asset_ts
 
 -- 3. Weather alerts (discrete events)
 CREATE TABLE IF NOT EXISTS weather_alerts (
-    alert_id            TEXT PRIMARY KEY,
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    alert_id            TEXT UNIQUE,
     zone                TEXT NOT NULL,
     alert_type          TEXT NOT NULL,
     severity            TEXT NOT NULL,

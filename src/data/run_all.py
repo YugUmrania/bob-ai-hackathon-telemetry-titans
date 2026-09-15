@@ -2,14 +2,27 @@
 run_all.py
 ──────────
 Master orchestrator - runs every generator in sequence, then merges into SQLite.
+
+Weather strategy (automatic):
+  - If OPENWEATHERMAP_API_KEY is set in src/.env  → fetch LIVE 5-day forecast
+  - Otherwise                                      → generate synthetic alerts
+
 Usage:
     cd src/data
     python run_all.py
 """
 
+import os
 import sys
 import time
 from pathlib import Path
+
+# Load .env from repo root (src/.env) so OPENWEATHERMAP_API_KEY is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env")
+except ImportError:
+    pass
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -34,11 +47,23 @@ def main():
     assets_df.to_csv(OUTPUT_DIR / "assets.csv", index=False)
     print(f"  -> Saved {OUTPUT_DIR / 'assets.csv'}")
 
-    # 2. Weather alerts
-    print("\n[2/6] Generating weather alerts...")
-    weather_df = generate_weather_alerts()
+    # 2. Weather alerts — live if API key set, synthetic otherwise
+    print("\n[2/6] Fetching/generating weather alerts...")
+    api_key = os.getenv("OPENWEATHERMAP_API_KEY", "").strip()
+    if api_key:
+        print("  -> OPENWEATHERMAP_API_KEY found — fetching LIVE forecast")
+        from fetch_weather import fetch_weather_alerts
+        weather_df = fetch_weather_alerts()
+        if weather_df.empty:
+            print("  -> Live fetch returned no alerts — falling back to synthetic")
+            weather_df = generate_weather_alerts()
+        else:
+            print(f"  -> Live fetch: {len(weather_df)} alert events")
+    else:
+        print("  -> No API key — using synthetic weather alerts")
+        weather_df = generate_weather_alerts()
     weather_df.to_csv(OUTPUT_DIR / "weather_alerts.csv", index=False)
-    print(f"  -> Saved {OUTPUT_DIR / 'weather_alerts.csv'}")
+    print(f"  -> Saved {OUTPUT_DIR / 'weather_alerts.csv'} ({len(weather_df)} rows)")
 
     # 3. Sensor readings (depends on assets for classification)
     print("\n[3/6] Generating sensor readings...")
