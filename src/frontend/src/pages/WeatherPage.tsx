@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Cloud,
@@ -696,6 +696,9 @@ function LiveWeatherPanel() {
   const [alerts, setAlerts] = useState<LiveAlert[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState(60);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
     fetch(`${base}/api/v1/weather/areas`).then((r) => (r.ok ? r.json() : [])).then((d) => {
@@ -704,14 +707,27 @@ function LiveWeatherPanel() {
     });
   }, [base]);
 
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
   useEffect(() => {
     if (!area) return;
     setLoading(true);
     fetch(`${base}/api/v1/weather/live?area=${encodeURIComponent(area)}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then(setAlerts)
+      .then((d) => { setAlerts(d); setLastUpdated(new Date()); setCountdown(60); })
       .finally(() => setLoading(false));
   }, [area, base, refreshKey]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const t = setInterval(() => {
+      setCountdown((s) => {
+        if (s <= 1) { refresh(); return 60; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [autoRefresh, refresh]);
 
   const byZone = useMemo(() => {
     const grouped: Record<string, LiveAlert[]> = {};
@@ -721,13 +737,40 @@ function LiveWeatherPanel() {
     return grouped;
   }, [alerts]);
 
+  const fmt = (s: string | null) =>
+    s ? new Date(s).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+
+  const fmtTs = (d: Date | null) =>
+    d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '—';
+
   return (
     <section className="card p-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Cloud size={15} className="text-brand-400" />
-          <h2 className="text-sm font-semibold text-white">Live Weather by State</h2>
-          <span className="text-[10px] text-slate-500 ml-1">{alerts.length} alerts</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Cloud size={15} className="text-brand-400" />
+            <h2 className="text-sm font-semibold text-white">Live Weather by State</h2>
+            <span className="text-[10px] text-slate-500 ml-1">{alerts.length} alerts</span>
+          </div>
+          {lastUpdated && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                </span>
+                <span className="text-[10px] font-semibold text-green-400">LIVE</span>
+              </div>
+              <span className="text-[10px] text-slate-500">
+                Updated {fmtTs(lastUpdated)}
+              </span>
+            </>
+          )}
+          {autoRefresh && (
+            <span className="text-[10px] text-slate-600 bg-navy-800 px-2 py-0.5 rounded-full">
+              next in {countdown}s
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -744,16 +787,27 @@ function LiveWeatherPanel() {
             <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">▾</span>
           </div>
           <button
-            onClick={() => setRefreshKey((k) => k + 1)}
+            onClick={() => setAutoRefresh((f) => !f)}
+            className={`px-2 py-2 rounded-lg border text-[10px] font-semibold transition-colors ${
+              autoRefresh
+                ? 'bg-green-500/15 border-green-500/30 text-green-400 hover:bg-green-500/25'
+                : 'bg-navy-800 border-surface-border/50 text-slate-400 hover:text-slate-300'
+            }`}
+            aria-label="Toggle auto-refresh"
+          >
+            {autoRefresh ? 'AUTO' : 'OFF'}
+          </button>
+          <button
+            onClick={refresh}
             className="p-2 rounded-lg bg-navy-800 border border-surface-border/50 text-slate-400 hover:text-white hover:bg-navy-700 transition-colors"
-            aria-label="Refresh"
+            aria-label="Refresh now"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {loading && <p className="text-xs text-slate-500">Fetching live forecast…</p>}
+      {loading && alerts.length === 0 && <p className="text-xs text-slate-500">Fetching live forecast…</p>}
       {!loading && alerts.length === 0 && <p className="text-xs text-slate-500">No alerts for this area.</p>}
 
       {!loading && alerts.length > 0 && (
@@ -778,7 +832,7 @@ function LiveWeatherPanel() {
                           {a.severity}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-500">{a.start_time} → {a.end_time}</p>
+                      <p className="text-[10px] text-slate-500">{fmt(a.start_time)} → {fmt(a.end_time)}</p>
                       <div className="flex gap-2 mt-1 text-[10px] text-slate-400">
                         {a.max_wind_kmh != null && <span>💨 {a.max_wind_kmh} km/h</span>}
                         {a.max_temp_c != null && <span>🌡 {a.max_temp_c}°C</span>}
