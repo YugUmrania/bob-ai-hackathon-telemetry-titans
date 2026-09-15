@@ -2,89 +2,123 @@
 
 ## System Architecture
 
-GridGuard AI is composed of two independent layers: a **Python data pipeline** that generates and persists grid telemetry into SQLite, and a **React SPA** that visualises that data. A FastAPI backend (planned, not yet deployed) will bridge them via a REST API.
+GridHealth AI has three layers that all share a single SQLite database: a Python data-generation pipeline that creates the dataset, a FastAPI backend that runs ML scoring and serves a REST API, and a React frontend that visualises the results.
 
 ```mermaid
 graph TD
-    subgraph Data Pipeline ["Data Pipeline (Python — src/data/)"]
-        OWM[OpenWeatherMap API] -->|5-day forecast| FW[fetch_weather.py]
-        GEN_T[generate_topology.py] --> ASSETS[assets.csv]
-        GEN_S[generate_sensors.py] --> SENSORS[sensor_readings.csv]
-        GEN_W[generate_weather.py] --> WEATHER[weather_alerts.csv]
-        FW --> WEATHER
-        GEN_I[generate_incidents.py] --> INCIDENTS[historical_incidents.csv]
-        GEN_Z[generate_grid_zones.py] --> ZONES[grid_zones.csv]
-        ASSETS --> MERGE[merge_to_db.py]
-        SENSORS --> MERGE
-        WEATHER --> MERGE
-        INCIDENTS --> MERGE
-        ZONES --> MERGE
+    subgraph DataPipeline ["① Data Pipeline  (src/data/)"]
+        OWM_DATA[OpenWeatherMap API] -->|optional live fetch| FW[fetch_weather.py]
+        GT[generate_topology.py]  --> ASSETS_CSV[assets.csv]
+        GS[generate_sensors.py]   --> SENSORS_CSV[sensor_readings.csv]
+        GW[generate_weather.py]   --> WEATHER_CSV[weather_alerts.csv]
+        FW                        --> WEATHER_CSV
+        GI[generate_incidents.py] --> INCIDENTS_CSV[historical_incidents.csv]
+        GZ[generate_grid_zones.py]--> ZONES_CSV[grid_zones.csv]
+        ASSETS_CSV    --> MERGE[merge_to_db.py]
+        SENSORS_CSV   --> MERGE
+        WEATHER_CSV   --> MERGE
+        INCIDENTS_CSV --> MERGE
+        ZONES_CSV     --> MERGE
         MERGE --> DB[(grid_data.db — SQLite)]
     end
 
-    subgraph Backend ["Backend (FastAPI — planned)"]
-        DB --> API[FastAPI REST /api]
+    subgraph MLSeed ["② ML Seed  (src/backend/app/db/seed.py)"]
+        DB --> FEAT[Feature engineering\n11 features per asset]
+        FEAT --> XGB[XGBoost regressor\ntraining + scoring]
+        XGB --> SHAP_SVC[SHAP TreeExplainer]
+        XGB --> MAINT[maintenance_gen.py\ncrew scheduling]
+        SHAP_SVC --> DB
+        MAINT    --> DB
+        XGB      --> DB
     end
 
-    subgraph Frontend ["Frontend (React 18 — src/frontend/)"]
-        API -->|JSON| STORE[Zustand Store]
-        MOCK[Mock Data — src/mock/] -->|dev mode| STORE
+    subgraph Backend ["③ FastAPI Backend  (src/backend/)"]
+        DB --> API[FastAPI app\nuvicorn port 8000]
+        OWM_API[OpenWeatherMap API] -->|live forecast| LW[live_weather.py]
+        LW --> API
+        API --> R_ASSETS[GET /api/v1/assets]
+        API --> R_SUMMARY[GET /api/v1/summary]
+        API --> R_MAINT[GET /api/v1/maintenance]
+        API --> R_WEATHER[GET /api/v1/weather]
+        API --> R_WEATHER_LIVE[GET /api/v1/weather/live]
+    end
+
+    subgraph Frontend ["④ React Dashboard  (src/frontend/)"]
+        STORE[Zustand store\nloadData]
+        R_ASSETS      -->|JSON| STORE
+        R_SUMMARY     -->|JSON| STORE
+        R_MAINT       -->|JSON| STORE
+        MOCK[Mock data fallback] -->|if API down| STORE
         STORE --> DASH[Dashboard]
         STORE --> MAP[Map View — Leaflet]
         STORE --> TABLE[Asset Table — TanStack]
         STORE --> DETAIL[Asset Detail — Recharts + SHAP]
-        STORE --> MAINT[Maintenance Plan]
+        STORE --> MAINT_PAGE[Maintenance Plan]
         STORE --> CAL[Calendar]
         STORE --> WX[Weather Page]
     end
 
-    User[👤 Grid Engineer] -->|Browser| DASH
-    User --> MAP
-    User --> TABLE
-    User --> DETAIL
-    User --> MAINT
+    User[👤 Grid Engineer] -->|Browser http://localhost:5173| DASH
 ```
 
 ## Components
 
 | Component | Technology | Responsibility |
 |---|---|---|
-| Data pipeline orchestrator | Python 3.11, `run_all.py` | Runs all generators in sequence, then merges into SQLite |
-| Grid topology generator | Python / pandas | Produces 105 assets (transformers + substations) across 5 zones with lat/lng, customers served, install year |
-| Sensor generator | Python / NumPy | Generates 30 days × hourly readings per asset with realistic failure signatures (healthy / degrading / near-failure tiers) |
-| Weather generator | Python / requests | Synthetic weather alert events (2023–2026); optionally fetches live 5-day forecasts from OpenWeatherMap free API |
-| Incident generator | Python / pandas | 300 historical outage/failure records (2023–2025) weighted toward older, high-load assets |
-| Database layer | SQLite (`grid_data.db`) | Single-file database holding all 5 tables; zero-setup for evaluators |
-| Backend API | FastAPI (planned) | Will serve `/api/assets`, `/api/maintenance`, `/api/weather`, `/api/summary` to the frontend |
-| Frontend SPA | React 18 + Vite + TypeScript | Eight-page dashboard; currently runs on rich mock data until the backend is deployed |
-| State management | Zustand | Single store (`useAppStore`) holds assets, maintenance tasks, and UI filters; `loadData()` fetches from API or mock |
-| Grid map | Leaflet + react-leaflet | Renders all assets as colour-coded risk markers; popup on click navigates to asset detail |
-| Charts | Recharts | Sensor trend line charts (30-day history), SHAP bar chart, risk gauge |
-| Asset table | TanStack Table v8 | Sortable, filterable, paginated table of all grid assets |
+| Data pipeline | Python 3.11, pandas, NumPy | Generates all 5 CSV datasets and merges them into SQLite. Runs once via `python run_all.py`. |
+| Topology generator | `generate_topology.py` | 105 assets (70% transformers, 30% substations) across 5 Delhi-NCR zones with real coordinates. |
+| Sensor generator | `generate_sensors.py` | 30 days × hourly readings per asset with physically realistic failure signatures (healthy / degrading / near-failure tiers, `RANDOM_SEED=42`). |
+| Weather generator | `generate_weather.py` / `fetch_weather.py` | Synthetic alert events (2023–2026) OR live OWM 5-day forecasts classified into typed events. |
+| ML seed | `app/db/seed.py` | Trains XGBoost on 11-feature aggregated sensor matrix, computes SHAP, writes `risk_scores` + `shap_values` + `maintenance_tasks` to the shared DB. |
+| FastAPI backend | FastAPI 0.111, SQLAlchemy 2.0, Pydantic v2 | Four route groups: assets, summary, maintenance, weather. Starts instantly (no ML at startup). |
+| Prediction service | `services/prediction.py` | Feature engineering SQL, XGBoost train/load, SHAP TreeExplainer, priority score formula. |
+| Maintenance service | `services/maintenance_gen.py` | Schedules tasks by risk tier (CRITICAL=day 0, HIGH=1–2, MEDIUM=3–6, LOW=7–13) with round-robin crew assignment. |
+| Live weather service | `services/live_weather.py` | 18 Indian state area mappings; spreads 5 zone centers, fetches OWM forecasts, classifies + groups into alert events. |
+| Database | SQLite `grid_data.db` | Single file shared by all layers. 5 data tables + 3 ML tables. No DB server required. |
+| React SPA | React 18, Vite, TypeScript, Tailwind CSS | 8 pages, 4 themes, Zustand state with API-first + mock fallback. |
+| Grid map | Leaflet + react-leaflet | Colour-coded risk markers across 5 geographic zones; click opens Asset Detail. |
+| Charts | Recharts | 30-day sensor trend line charts, SHAP feature-importance bar chart, risk gauge. |
+| Asset table | TanStack Table v8 | Sortable, filterable, paginated; filter by risk level, zone, asset type, status. |
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/summary` | Grid-wide KPI counts (critical/high/medium/low, maintenance today, last updated) |
+| `GET` | `/api/v1/assets` | All assets with risk scores; query params: `risk_level`, `zone`, `sort`, `order`, `limit` |
+| `GET` | `/api/v1/assets/{id}` | Single asset with SHAP explanations |
+| `GET` | `/api/v1/assets/{id}/sensors` | Sensor time-series; query params: `days`, `limit` |
+| `GET` | `/api/v1/maintenance` | Maintenance tasks; query params: `asset_id`, `priority`, `status` |
+| `GET` | `/api/v1/weather` | DB-stored alerts; query params: `zone`, `severity`, `active_only` |
+| `GET` | `/api/v1/weather/areas` | List of selectable Indian state areas |
+| `GET` | `/api/v1/weather/live` | Real-time OWM alerts; query param: `area` (e.g., `Maharashtra`) |
+
+Full interactive docs available at `http://localhost:8000/docs` when the backend is running.
 
 ## Data Flow
 
-1. **Pipeline runs:** `python src/data/run_all.py` — takes ~4 seconds on any machine with Python 3.11.
-2. **Topology first:** `generate_topology.py` creates the 105-asset `assets.csv` with geographic coordinates centred around Delhi (28.6°N, 77.2°E) to give the Leaflet map realistic spatial spread.
-3. **Sensor data depends on topology:** `generate_sensors.py` receives the assets DataFrame and assigns each asset a health tier (healthy / degrading / near-failure) using `RANDOM_SEED=42` for reproducibility. It writes 75 600 rows to `sensor_readings.csv`.
-4. **Weather and incidents are independent:** `generate_weather.py` and `generate_incidents.py` produce their CSVs in parallel (within the sequential pipeline).
-5. **Zone metadata is derived:** `generate_grid_zones.py` aggregates `assets.csv` per zone — total customers, critical facilities, area — so `grid_zones.csv` is always consistent with the topology.
-6. **Merge to SQLite:** `merge_to_db.py` loads all 5 CSVs into SQLite and runs cross-table foreign key checks (every `asset_id` in sensor/incident tables must exist in `assets`).
-7. **Frontend loads data:** On page load, `useAppStore.loadData()` calls the API (or falls back to `src/mock/mockData.ts` in dev). The Zustand store distributes data to all page components via selectors.
-8. **Risk display:** Each asset renders its `risk_score` (0–100) as a colour-coded badge and Leaflet marker (green → yellow → orange → red). Clicking an asset opens `AssetDetail`, which shows sensor trend charts and the SHAP explanation.
+1. `python run_all.py` (from `src/data/`) — generates all CSVs and merges into `grid_data.db` (~4 s).
+2. `python -m app.db.seed` (from `src/backend/`) — reads the 5 data tables, trains XGBoost, writes 3 ML tables back into the same DB (~10–20 s first run; loads saved model on subsequent runs).
+3. `uvicorn app.main:app` — FastAPI starts, creates ML tables if missing (non-destructive), serves requests.
+4. React app loads — `useAppStore.loadData()` fetches from `/api/v1/assets`, `/api/v1/summary`, `/api/v1/maintenance` in parallel; maps backend shapes to frontend types; falls back to mock data if the API is unavailable.
+5. User navigates — Zustand selectors distribute data to each page component with no additional fetches.
+6. Asset Detail page — triggers `GET /api/v1/assets/{id}` (with SHAP) when a specific asset is opened.
+7. Weather Live page — triggers `GET /api/v1/weather/live?area=…` which calls OWM in real time.
 
 ## Security Considerations
 
-- API keys (`OPENWEATHERMAP_API_KEY`) are read from environment variables via `python-dotenv`; they are never hardcoded in source files.
-- `.env` files are in `.gitignore` — only `.env.example` is committed.
-- The frontend `VITE_API_BASE_URL` env var controls the API target, preventing accidental calls to production from a dev build.
-- The FastAPI backend (when deployed) should add Bearer token authentication on all `/api/*` routes before any production use.
+- The OWM API key is read from environment variables (`OPENWEATHERMAP_API_KEY`) via `python-dotenv` — never hardcoded in source.
+- `.env` files are in `.gitignore`; only `.env.example` is committed.
+- The frontend `VITE_API_BASE_URL` env var isolates API target between dev and production builds.
+- The FastAPI backend has CORS configured to `http://localhost:5173` by default; override with `CORS_ORIGIN` env var.
+- No authentication is implemented — not production-ready.
 
-## Scalability Notes
+## Scalability Path
 
-The current architecture is a hackathon prototype. To scale:
-
-- **Database:** Replace SQLite with PostgreSQL. The `schema.sql` DDL is already compatible — only the connection string in `merge_to_db.py` needs updating.
-- **Backend:** The planned FastAPI app is stateless and can be horizontally scaled behind a load balancer (e.g., on IBM Code Engine or Kubernetes).
-- **Sensor ingestion:** Replace the batch CSV pipeline with a streaming ingestion layer (e.g., IBM Event Streams / Kafka) that feeds the same SQLite/PostgreSQL schema in real time.
-- **ML model:** The XGBoost scorer can be deployed as a watsonx.ai custom model endpoint, replacing the in-pipeline scoring with an API call — enabling online retraining as new sensor data arrives.
+| Concern | Production upgrade |
+|---|---|
+| Database | Replace SQLite with PostgreSQL — the SQLAlchemy models and DDL are already compatible |
+| Model retraining | Move `seed.py` logic to a scheduled task or watsonx.ai custom model endpoint |
+| Sensor ingestion | Replace batch CSV pipeline with IBM Event Streams (Kafka) feeding the same DB schema in real time |
+| Backend | FastAPI is stateless — horizontally scalable behind a load balancer on IBM Code Engine or Kubernetes |
+| Frontend | Vite produces optimised static assets deployable to any CDN (IBM Cloud Object Storage + CDN) |

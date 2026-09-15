@@ -9,65 +9,82 @@
 # =============================================================================
 
 team:
-  name: "Telemetry Titans"                             # REQUIRED — e.g., "Orion Squad"
-  track: "AI"                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
+  name: "Telemetry Titans"                             # REQUIRED
+  track: "AI"                                          # REQUIRED — one of: AI | DevOps | Sustainability | Open
   lead:
-    name: "Vedant Patel"                           # REQUIRED — e.g., "Alice Chen"
-    email: "24dcs092@charusat.edu.in"                          # REQUIRED — e.g., "alice.chen@ibm.com"
+    name: "Vedant Patel"                               # REQUIRED
+    email: "24dcs092@charusat.edu.in"                  # REQUIRED
   members:
-    - name: "Het Talpara"                         # REQUIRED — Team member 1
-      email: "24dcs132@charusat.edu.in"
-    - name: "Parth Thakkar"                         # Add more members by copying the two lines above
-      email: "24dcs135@charusat.edu.in"
     - name: "Yug Umrania"
       email: "24dcs140@charusat.edu.in"
+    - name: "Parth Thakkar"
+      email: "24dcs135@charusat.edu.in"
+    - name: "Het Talpara"
+      email: "24dcs132@charusat.edu.in"
 
 submission:
-  title: "GridHealth AI"                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
+  title: "GridHealth AI"
 
-  problem_statement: >                 # REQUIRED — 1-3 sentences. What problem? Who has it?
-    "Power transformer and substation failures cause blackouts costing utilities $1M+/hour and affecting millions of people. Most utilities still use calendar-based maintenance, while sensors already measuring temperature, vibration, partial discharge, and oil quality show failure signatures weeks in advance. Weather events compound the risk — but sensor data and weather forecasts are never combined in time to act."
+  problem_statement: >
+    Power transformer and substation failures cause blackouts costing utilities
+    $1 M+/hour and affecting millions of people. Most utilities still rely on
+    calendar-based maintenance while sensors already measuring temperature,
+    vibration, partial discharge, and oil quality show failure signatures weeks
+    in advance. Weather events compound the risk, but sensor data and weather
+    forecasts are never combined in time to act.
 
-  solution_summary: >                  # REQUIRED — 1-3 sentences. What did you build?
-    "GridHealth AI combines transformer/substation sensor health data, weather forecasts, and historical incident records into risk-ranked predictions. It surfaces outage-prone assets on a live map, ranks equipment by grid-impact severity, and generates a prioritized maintenance and crew pre-positioning plan."
+  solution_summary: >
+    GridHealth AI is a full-stack predictive monitoring platform that fuses
+    30-day transformer/substation sensor telemetry, live OpenWeatherMap weather
+    forecasts, and three years of historical incident data into real-time
+    risk-ranked predictions via an XGBoost model. It surfaces outage-prone
+    assets on a live Leaflet map, explains predictions with SHAP values, and
+    auto-generates a prioritised, crew-assigned maintenance plan — all
+    accessible through a React dashboard backed by a FastAPI REST API.
 
-  key_features:                        # REQUIRED — List 3 to 5 specific features you implemented
-    - "Failure prediction model (XGBoost) scoring asset failure probability from sensor trends"
-    - "Risk-ranking formula weighing sensor alarms, weather exposure, and customers served"
-    - "Interactive grid map with risk-colored asset markers (Leaflet)"
-    - "Prioritized maintenance and crew pre-positioning plan generator"
-    - "Asset detail view with sensor trend charts and SHAP explanation"
+  key_features:
+    - "XGBoost failure prediction model scoring 0-100 risk per asset from 30-day sensor trends"
+    - "Priority-weighted risk ranking: 50% model score + 25% customers served + critical-facility and weather bonuses"
+    - "SHAP explainability — per-asset feature contribution breakdown on the Asset Detail page"
+    - "Live weather integration: real OpenWeatherMap 5-day forecasts classified into typed alert events"
+    - "Auto-generated maintenance plan with emergency/urgent/routine tiers and round-robin crew assignment"
+    - "Interactive Leaflet grid map with colour-coded risk markers across 5 geographic zones"
+    - "Four fully consistent UI themes: Dark, Light, High Contrast Dark, High Contrast Light"
 
   tech_stack:
-    languages: ["Python", "Typescript", "Javascript"]                      # REQUIRED — e.g., ["Python", "TypeScript"]
-    frameworks: ["React", "FastAPI", "SHAP", "XGBoost"]                     # e.g., ["FastAPI", "React"]
-    ibm_technologies: ["IBM Bob"]               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
-    databases: ["SQLite"]                      # e.g., ["PostgreSQL", "Redis"]
-    other: ["OpenWhetherMap API", "Nova", "Github Actions", "Git"]                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
+    languages: ["Python", "TypeScript", "JavaScript"]
+    frameworks: ["FastAPI", "React", "Vite", "Tailwind CSS", "SQLAlchemy", "Pydantic"]
+    ibm_technologies: ["IBM Bob"]
+    databases: ["SQLite"]
+    other: ["XGBoost", "SHAP", "scikit-learn", "OpenWeatherMap API", "Leaflet", "Recharts", "Zustand", "TanStack Table", "GitHub Actions"]
 
-  what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    The end-to-end data pipeline that generates scientifically credible synthetic sensor failure
-    signatures (temperature drift, vibration spikes, partial discharge) using real transformer-failure
-    physics, combined with an interactive React dashboard that surfaces risk-ranked assets on a live
-    Leaflet map with SHAP-explained predictions. The tight separation between data generation, SQLite
-    database, and frontend means the system is ready to replace mock data with real SCADA feeds with
-    minimal changes.
+  what_we_are_most_proud_of: >
+    The complete integrated pipeline — synthetic sensor data with real
+    transformer-failure physics feeds an XGBoost model, whose SHAP-explained
+    predictions flow through a FastAPI backend into a React dashboard, all
+    sharing a single SQLite database and runnable from scratch in under
+    5 minutes. The live weather overlay that pulls real OpenWeatherMap forecasts,
+    classifies them into typed alert events, and automatically adjusts per-asset
+    priority scores is the standout feature that makes the system genuinely
+    useful beyond a demo.
 
-  known_limitations: >                 # Optional but recommended — be honest about gaps
-    The FastAPI backend is planned but not yet wired up; the frontend currently runs on rich mock data.
-    The XGBoost model scoring is embedded in the data-generation pipeline rather than as a deployed
-    inference endpoint. Authentication is not implemented. The app has been tested on Chrome and Firefox
-    only. Live weather integration requires a free OpenWeatherMap API key; synthetic weather is the default.
+  known_limitations: >
+    The XGBoost model trains on synthetic rule-based labels (no real SCADA
+    outage ground truth) — in production these would be replaced by actual
+    historical outage labels. The live weather endpoint requires a free
+    OpenWeatherMap API key. Authentication is not implemented. The Asset Detail
+    sensor trend charts currently display mock data; the real
+    /api/v1/assets/{id}/sensors endpoint exists and is ready but the frontend
+    wiring is the next step.
 
 # =============================================================================
 # ARTIFACT LOCATIONS
-# These paths are relative to the repo root. Only change if you moved files.
 # =============================================================================
 artifacts:
   source_code: "src/"
   setup_guide: "docs/setup-guide.md"
   architecture_doc: "docs/architecture.md"
-  demo_video: "demo/demo-video-link.txt"   # URL to hosted video (YouTube, Loom, Box)
-  live_demo: "demo/live-demo-url.txt"      # URL to deployed demo (optional)
+  demo_video: "demo/demo-video-link.txt"
+  live_demo: "demo/live-demo-url.txt"
   screenshots: "demo/screenshots/"
   presentation: "presentation/"

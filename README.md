@@ -1,4 +1,4 @@
-# ⚡ GridGuard AI
+# ⚡ GridHealth AI
 
 > **Predictive grid-health monitoring and maintenance prioritisation for power utilities.**  
 > IBM Bob AI Innovation Hackathon 2026 — Team Telemetry Titans
@@ -11,8 +11,10 @@
 |---|---|
 | **Team Name** | Telemetry Titans |
 | **Track** | AI |
-| **Team Lead** | Vedant Patel — 24dcs092@charusat.edu.in |
-| **Members** | Het Talpara (24dcs132@charusat.edu.in), Parth Thakkar (24dcs135@charusat.edu.in), Yug Umrania (24dcs140@charusat.edu.in) |
+| **Team Lead** | Vedant Patel (24DCS092) — 24dcs092@charusat.edu.in |
+| **Members** | Yug Umrania (24DCS140) — 24dcs140@charusat.edu.in |
+| | Parth Thakkar (24DCS135) — 24dcs135@charusat.edu.in |
+| | Het Talpara (24DCS132) — 24dcs132@charusat.edu.in |
 
 ---
 
@@ -24,19 +26,20 @@ Power transformer and substation failures cause blackouts costing utilities $1 M
 
 ## 💡 Solution
 
-GridGuard AI combines transformer/substation sensor health data, weather forecasts, and historical incident records into risk-ranked predictions. It surfaces outage-prone assets on a live interactive map, ranks equipment by grid-impact severity, and generates a prioritised maintenance and crew pre-positioning plan — all in a single dashboard.
+GridHealth AI is a full-stack predictive monitoring platform that fuses transformer/substation sensor telemetry, live OpenWeatherMap weather forecasts, and three years of historical incident data into a real-time risk-ranked view of every grid asset. An XGBoost model scores failure probability per asset; a priority formula weighs that score against customers served, critical-facility proximity, and active weather alerts. A React dashboard surfaces risk on a live Leaflet map, explains predictions via SHAP, and auto-generates a crew-assigned maintenance plan.
 
 ---
 
 ## ✨ Key Features
 
-- **Failure Prediction Model (XGBoost):** Scores per-asset failure probability from real sensor trends (temperature, vibration, oil quality, partial discharge).
-- **Risk-Ranking Formula:** Weighs sensor alarms, weather exposure, asset age, and number of customers served into a 0–100 risk score.
-- **Interactive Grid Map:** Leaflet-powered map with colour-coded risk markers per asset and live weather-overlay context.
-- **Prioritised Maintenance Planner:** Generates a sorted work order list with estimated cost, crew assignment, and urgency tier.
-- **Asset Detail View:** Per-asset sensor trend charts (Recharts), SHAP feature-importance bar chart, and full inspection history.
-- **Weather Threat Integration:** Live OpenWeatherMap 5-day forecasts classified into alert events (storm, heatwave, high wind, ice storm, flood) and overlaid on asset risk scores.
-- **Maintenance Calendar:** Monthly calendar view of all scheduled, in-progress, and completed maintenance events.
+- **XGBoost Failure Prediction:** Trained on aggregated 30-day sensor trends (temperature, vibration, oil quality, partial discharge) + incident history; scores 0–100 failure risk per asset.
+- **Priority-Weighted Risk Ranking:** Composite score = 50% model risk + 25% customers served + 15% critical facility bonus + 10% active weather bonus.
+- **SHAP Explainability:** Per-asset feature contribution breakdown so engineers know *why* an asset is flagged.
+- **Live Weather Integration:** `GET /api/v1/weather/live?area=Maharashtra` fetches real OpenWeatherMap 5-day forecasts, classifies them into typed alert events, and overlays them on risk scores.
+- **Interactive Grid Map:** Leaflet map with colour-coded risk markers across 5 geographic zones.
+- **Auto-Generated Maintenance Plan:** Backend schedules CRITICAL assets for day 0, HIGH for days 1–2, MEDIUM for days 3–6, LOW for days 7–13 — with round-robin crew assignment.
+- **Asset Detail + SHAP Charts:** Per-asset sensor trend charts (Recharts), SHAP bar chart, and full inspection metadata.
+- **4 Themes:** Dark, Light, High Contrast Dark, High Contrast Light — fully consistent across all pages.
 
 ---
 
@@ -45,11 +48,12 @@ GridGuard AI combines transformer/substation sensor health data, weather forecas
 | Category | Technologies |
 |---|---|
 | **Languages** | Python 3.11, TypeScript 5, JavaScript |
-| **Frameworks** | React 18, Vite, Tailwind CSS, FastAPI (backend — planned) |
-| **ML / AI** | XGBoost, SHAP, pandas, NumPy |
-| **IBM Technologies** | IBM Bob (used for development assistance throughout the project) |
-| **Databases** | SQLite (via `grid_data.db`), CSV data pipeline |
-| **Frontend Libraries** | Leaflet / react-leaflet, Recharts, TanStack Table, Zustand, Axios, React Router v7 |
+| **Backend** | FastAPI 0.111, Uvicorn, SQLAlchemy 2.0, Pydantic v2 |
+| **ML / AI** | XGBoost 2.0, SHAP 0.45, scikit-learn 1.4, pandas, NumPy |
+| **Frontend** | React 18, Vite, Tailwind CSS, React Router v7 |
+| **Frontend Libraries** | Leaflet / react-leaflet, Recharts, TanStack Table v8, Zustand, Axios |
+| **IBM Technologies** | IBM Bob (AI coding assistant used throughout development) |
+| **Database** | SQLite (`grid_data.db`) — single shared DB for all layers |
 | **Other** | OpenWeatherMap API, GitHub Actions, python-dotenv |
 
 ---
@@ -59,35 +63,39 @@ GridGuard AI combines transformer/substation sensor health data, weather forecas
 ```
 bob-ai-hackathon-telemetry-titans/
 ├── src/
-│   ├── data/                  # Python data-generation pipeline → SQLite DB
-│   │   ├── run_all.py         # Master orchestrator (runs the whole pipeline)
-│   │   ├── generate_*.py      # Individual generator scripts
-│   │   ├── fetch_weather.py   # Live OpenWeatherMap integration
-│   │   ├── merge_to_db.py     # Loads CSVs → SQLite
+│   ├── data/                  # Python synthetic data generation pipeline
+│   │   ├── run_all.py         # Step 1 — generates all CSVs + SQLite DB (~4s)
+│   │   ├── generate_*.py      # Individual generators (topology, sensors, weather, incidents, zones)
+│   │   ├── fetch_weather.py   # Live OWM forecast → weather_alerts.csv
+│   │   ├── merge_to_db.py     # Loads CSVs → grid_data.db
 │   │   ├── verify_data.py     # Data integrity checker
-│   │   ├── config.py          # All tuning knobs (seeds, thresholds, paths)
-│   │   ├── schema.sql         # SQLite DDL
+│   │   ├── config.py          # Tuning knobs (seeds, thresholds, counts, paths)
 │   │   └── requirements.txt
-│   └── frontend/              # React + TypeScript dashboard
-│       ├── src/
-│       │   ├── pages/         # Dashboard, MapView, AssetTable, AssetDetail, …
-│       │   ├── components/    # Charts, map markers, tables, UI primitives
-│       │   ├── store/         # Zustand app state
-│       │   ├── types/         # Domain type definitions
-│       │   └── api/           # Axios API client
-│       ├── package.json
-│       └── vite.config.ts
+│   ├── backend/               # FastAPI + XGBoost + SHAP
+│   │   ├── app/
+│   │   │   ├── main.py            # FastAPI app, CORS, router registration
+│   │   │   ├── config.py          # Settings (DB URL, OWM key, CORS)
+│   │   │   ├── routers/           # assets, maintenance, summary, weather
+│   │   │   ├── services/          # prediction.py (XGBoost+SHAP), maintenance_gen.py, live_weather.py
+│   │   │   └── db/                # SQLAlchemy models, seed.py (Step 2)
+│   │   └── requirements.txt
+│   ├── frontend/              # React 18 + TypeScript dashboard
+│   │   └── src/
+│   │       ├── pages/         # Dashboard, MapView, AssetTable, AssetDetail, Maintenance, Calendar, Weather, Settings
+│   │       ├── components/    # Charts (RiskGauge, SensorTrend, SHAP), Map, Tables, UI primitives
+│   │       ├── store/         # Zustand app state — tries API, falls back to mock
+│   │       ├── mock/          # Rich mock data for offline/demo use
+│   │       └── types/         # Shared TypeScript domain types
+│   └── ml/                    # Trained model artefacts (populated by seed.py)
+│       └── models/
 ├── docs/
 │   ├── problem-statement.md
 │   ├── solution-overview.md
 │   ├── architecture.md
 │   └── setup-guide.md
 ├── demo/
-│   ├── screenshots/
-│   ├── demo-video-link.txt
-│   └── live-demo-url.txt
 ├── presentation/
-├── DATA_SCHEMA.md             # Full CSV schema for the data pipeline
+├── DATA_SCHEMA.md
 └── submission.yaml
 ```
 
@@ -95,24 +103,29 @@ bob-ai-hackathon-telemetry-titans/
 
 ## ⚡ How to Run
 
-Full instructions are in [`docs/setup-guide.md`](docs/setup-guide.md). Quick start:
+Full instructions are in [`docs/setup-guide.md`](docs/setup-guide.md). Quick start (3 steps):
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/your-org/bob-ai-hackathon-telemetry-titans.git
-cd bob-ai-hackathon-telemetry-titans
-
-# 2. Generate the dataset (Python)
+# Step 1 — Generate dataset (Python)
 cd src/data
 pip install -r requirements.txt
-python run_all.py          # writes CSVs + grid_data.db in ~4 seconds
+python run_all.py            # → src/data/output/grid_data.db (~4 s)
 
-# 3. Run the frontend dashboard
+# Step 2 — Seed ML scores (Python, from src/backend/)
+cd ../backend
+pip install -r requirements.txt
+python -m app.db.seed        # → trains XGBoost, writes risk_scores + maintenance_tasks
+
+# Step 3a — Start backend
+uvicorn app.main:app --reload --port 8000
+
+# Step 3b — Start frontend (new terminal)
 cd ../frontend
-cp .env.example .env       # default value works for local mock mode
-npm install
-npm run dev                # → http://localhost:5173
+cp .env.example .env
+npm install && npm run dev   # → http://localhost:5173
 ```
+
+> The frontend automatically falls back to rich mock data if the backend is not running.
 
 ---
 
@@ -124,19 +137,20 @@ npm run dev                # → http://localhost:5173
 | 🌐 Live Demo | [See demo/live-demo-url.txt](demo/live-demo-url.txt) |
 | 🖼️ Screenshots | [See demo/screenshots/](demo/screenshots/) |
 | 📊 Presentation | [See presentation/](presentation/) |
+| 📖 API Docs | `http://localhost:8000/docs` (when backend is running) |
 
 ---
 
 ## ⚠️ Known Limitations
 
-- The FastAPI backend is planned but not yet wired up — the frontend currently runs on rich mock data (`src/frontend/src/mock/`). The data pipeline generates a real SQLite database ready to be served by the backend.
-- The XGBoost model scoring is embedded in the data-generation pipeline for the hackathon demo; a standalone inference endpoint is not deployed.
+- The ML model uses synthetic rule-based labels (no real SCADA outage ground truth) — the XGBoost model learns from the same failure physics rules used to generate the sensor data. In a production deployment these would be replaced by actual historical outage labels.
+- The live weather endpoint (`/api/v1/weather/live`) requires a free OpenWeatherMap API key; without it, it returns an empty list (the DB-backed `/api/v1/weather` endpoint works without a key).
 - Authentication/authorisation is not implemented — not production-ready.
-- The app has been tested on Chrome and Firefox. Mobile layout is functional but not fully optimised.
-- Live weather integration requires a free OpenWeatherMap API key (see setup guide); synthetic weather is the default.
+- The frontend sensor trend charts on the Asset Detail page show mock data; wiring them to the real `GET /api/v1/assets/{id}/sensors` endpoint is the next step.
+- Tested on Chrome and Firefox; mobile layout is functional but not fully optimised.
 
 ---
 
 ## 🏅 What We're Most Proud Of
 
-The **end-to-end data pipeline** — from realistic synthetic sensor failure signatures (temperature drift, vibration spikes, partial discharge) through risk scoring and SHAP explainability, all the way to the interactive dashboard map. The sensor physics follow real transformer-failure progression patterns, making the demo scientifically credible, not just visually polished. The tight separation between data generation, database, and UI means the system is ready to swap in real SCADA feeds with minimal changes.
+The **complete, integrated pipeline**: synthetic sensor data with real transformer-failure physics → XGBoost model trained on it → SHAP-explained predictions → FastAPI endpoints → React dashboard — all sharing a single SQLite database, all runnable from scratch in under 5 minutes with three commands. The live weather overlay that pulls real OpenWeatherMap forecasts, classifies them into typed alert events, and automatically adjusts asset priority scores is the standout feature that makes the system genuinely useful beyond a demo.
