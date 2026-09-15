@@ -1,4 +1,4 @@
-# 🚀 [Your Project Title Here]
+# 🚀 GridGuard AI
 
 > ⚠️ **Replace everything in `[ ]` brackets with your actual content before submission.**
 
