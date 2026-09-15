@@ -1,4 +1,7 @@
-# 🚀 GridGuard AI
+# ⚡ GridGuard AI
+
+> **Predictive grid-health monitoring and maintenance prioritisation for power utilities.**  
+> IBM Bob AI Innovation Hackathon 2026 — Team Telemetry Titans
 
 ---
 
@@ -6,36 +9,34 @@
 
 | Field | Value |
 |---|---|
-| **Team Name** | Telemetry-Titans |
-| **Track** | [AI / DevOps / Sustainability / Open] |
-| **Team Lead** | [Name] — [email@ibm.com] |
-| **Members** | [Name 1], [Name 2], [Name 3] |
+| **Team Name** | Telemetry Titans |
+| **Track** | AI |
+| **Team Lead** | Vedant Patel — 24dcs092@charusat.edu.in |
+| **Members** | Het Talpara (24dcs132@charusat.edu.in), Parth Thakkar (24dcs135@charusat.edu.in), Yug Umrania (24dcs140@charusat.edu.in) |
 
 ---
 
 ## 🎯 Problem Statement
 
-> In 2–3 sentences: What problem does your project solve? Who experiences this problem?
-
-[Describe the real-world problem your project addresses. Be specific about who the user is and what pain point they face.]
+Power transformer and substation failures cause blackouts costing utilities $1 M+/hour and affecting millions of people. Most utilities still use calendar-based maintenance, while sensors already measuring temperature, vibration, partial discharge, and oil quality show failure signatures weeks in advance. Weather events compound the risk — but sensor data and weather forecasts are never combined in time to act.
 
 ---
 
 ## 💡 Solution
 
-> In 2–3 sentences: What did you build? How does it solve the problem above?
-
-[Describe your solution clearly. Explain the core mechanism — what makes it work.]
+GridGuard AI combines transformer/substation sensor health data, weather forecasts, and historical incident records into risk-ranked predictions. It surfaces outage-prone assets on a live interactive map, ranks equipment by grid-impact severity, and generates a prioritised maintenance and crew pre-positioning plan — all in a single dashboard.
 
 ---
 
 ## ✨ Key Features
 
-- **Feature 1:** [Brief description — e.g., "Real-time anomaly detection using watsonx.ai"]
-- **Feature 2:** [Brief description]
-- **Feature 3:** [Brief description]
-- **Feature 4:** [Optional]
-- **Feature 5:** [Optional]
+- **Failure Prediction Model (XGBoost):** Scores per-asset failure probability from real sensor trends (temperature, vibration, oil quality, partial discharge).
+- **Risk-Ranking Formula:** Weighs sensor alarms, weather exposure, asset age, and number of customers served into a 0–100 risk score.
+- **Interactive Grid Map:** Leaflet-powered map with colour-coded risk markers per asset and live weather-overlay context.
+- **Prioritised Maintenance Planner:** Generates a sorted work order list with estimated cost, crew assignment, and urgency tier.
+- **Asset Detail View:** Per-asset sensor trend charts (Recharts), SHAP feature-importance bar chart, and full inspection history.
+- **Weather Threat Integration:** Live OpenWeatherMap 5-day forecasts classified into alert events (storm, heatwave, high wind, ice storm, flood) and overlaid on asset risk scores.
+- **Maintenance Calendar:** Monthly calendar view of all scheduled, in-progress, and completed maintenance events.
 
 ---
 
@@ -43,50 +44,74 @@
 
 | Category | Technologies |
 |---|---|
-| **Languages** | [e.g., Python, TypeScript] |
-| **Frameworks** | [e.g., FastAPI, React] |
-| **IBM Technologies** | [e.g., watsonx.ai, IBM Bob, IBM Cloud] |
-| **Databases** | [e.g., PostgreSQL, Redis] |
-| **Other** | [e.g., Docker, GitHub Actions] |
+| **Languages** | Python 3.11, TypeScript 5, JavaScript |
+| **Frameworks** | React 18, Vite, Tailwind CSS, FastAPI (backend — planned) |
+| **ML / AI** | XGBoost, SHAP, pandas, NumPy |
+| **IBM Technologies** | IBM Bob (used for development assistance throughout the project) |
+| **Databases** | SQLite (via `grid_data.db`), CSV data pipeline |
+| **Frontend Libraries** | Leaflet / react-leaflet, Recharts, TanStack Table, Zustand, Axios, React Router v7 |
+| **Other** | OpenWeatherMap API, GitHub Actions, python-dotenv |
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-├── src/                  # All source code
-├── docs/                 # Written documentation
+bob-ai-hackathon-telemetry-titans/
+├── src/
+│   ├── data/                  # Python data-generation pipeline → SQLite DB
+│   │   ├── run_all.py         # Master orchestrator (runs the whole pipeline)
+│   │   ├── generate_*.py      # Individual generator scripts
+│   │   ├── fetch_weather.py   # Live OpenWeatherMap integration
+│   │   ├── merge_to_db.py     # Loads CSVs → SQLite
+│   │   ├── verify_data.py     # Data integrity checker
+│   │   ├── config.py          # All tuning knobs (seeds, thresholds, paths)
+│   │   ├── schema.sql         # SQLite DDL
+│   │   └── requirements.txt
+│   └── frontend/              # React + TypeScript dashboard
+│       ├── src/
+│       │   ├── pages/         # Dashboard, MapView, AssetTable, AssetDetail, …
+│       │   ├── components/    # Charts, map markers, tables, UI primitives
+│       │   ├── store/         # Zustand app state
+│       │   ├── types/         # Domain type definitions
+│       │   └── api/           # Axios API client
+│       ├── package.json
+│       └── vite.config.ts
+├── docs/
 │   ├── problem-statement.md
 │   ├── solution-overview.md
 │   ├── architecture.md
 │   └── setup-guide.md
-├── demo/                 # Demo artifacts
-│   ├── screenshots/      # App screenshots
-│   └── demo-video-link.txt  # Link to demo video
-├── presentation/         # Slide deck
-└── submission.yaml       # Structured submission metadata
+├── demo/
+│   ├── screenshots/
+│   ├── demo-video-link.txt
+│   └── live-demo-url.txt
+├── presentation/
+├── DATA_SCHEMA.md             # Full CSV schema for the data pipeline
+└── submission.yaml
 ```
 
 ---
 
 ## ⚡ How to Run
 
-> **Copy these exact steps from your [`docs/setup-guide.md`](docs/setup-guide.md)**
+Full instructions are in [`docs/setup-guide.md`](docs/setup-guide.md). Quick start:
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/[your-repo].git
-cd [your-repo]
+git clone https://github.com/your-org/bob-ai-hackathon-telemetry-titans.git
+cd bob-ai-hackathon-telemetry-titans
 
-# 2. Install dependencies
-[your install command here]
+# 2. Generate the dataset (Python)
+cd src/data
+pip install -r requirements.txt
+python run_all.py          # writes CSVs + grid_data.db in ~4 seconds
 
-# 3. Configure environment
-cp .env.example .env
-# Edit .env with your values
-
-# 4. Run the project
-[your run command here]
+# 3. Run the frontend dashboard
+cd ../frontend
+cp .env.example .env       # default value works for local mock mode
+npm install
+npm run dev                # → http://localhost:5173
 ```
 
 ---
@@ -98,22 +123,20 @@ cp .env.example .env
 | 📹 Demo Video | [See demo/demo-video-link.txt](demo/demo-video-link.txt) |
 | 🌐 Live Demo | [See demo/live-demo-url.txt](demo/live-demo-url.txt) |
 | 🖼️ Screenshots | [See demo/screenshots/](demo/screenshots/) |
-| 📊 Presentation | [See presentation/slides.pdf](presentation/) |
+| 📊 Presentation | [See presentation/](presentation/) |
 
 ---
 
 ## ⚠️ Known Limitations
 
-> Be honest — judges appreciate transparency over overclaiming.
-
-- [Limitation 1: e.g., "Authentication is mocked — not production-ready"]
-- [Limitation 2: e.g., "Only tested on Chrome"]
-- [Limitation 3: e.g., "Feature X is scaffolded but not fully implemented"]
+- The FastAPI backend is planned but not yet wired up — the frontend currently runs on rich mock data (`src/frontend/src/mock/`). The data pipeline generates a real SQLite database ready to be served by the backend.
+- The XGBoost model scoring is embedded in the data-generation pipeline for the hackathon demo; a standalone inference endpoint is not deployed.
+- Authentication/authorisation is not implemented — not production-ready.
+- The app has been tested on Chrome and Firefox. Mobile layout is functional but not fully optimised.
+- Live weather integration requires a free OpenWeatherMap API key (see setup guide); synthetic weather is the default.
 
 ---
 
 ## 🏅 What We're Most Proud Of
 
-[Tell the judges what part of your submission is strongest and worth paying close attention to.]
-
----
+The **end-to-end data pipeline** — from realistic synthetic sensor failure signatures (temperature drift, vibration spikes, partial discharge) through risk scoring and SHAP explainability, all the way to the interactive dashboard map. The sensor physics follow real transformer-failure progression patterns, making the demo scientifically credible, not just visually polished. The tight separation between data generation, database, and UI means the system is ready to swap in real SCADA feeds with minimal changes.

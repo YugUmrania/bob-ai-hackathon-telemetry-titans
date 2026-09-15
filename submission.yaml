@@ -46,12 +46,18 @@ submission:
     other: ["OpenWhetherMap API", "Nova", "Github Actions", "Git"]                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
 
   what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    Replace with what aspect of the submission you consider strongest
-    and want judges to pay special attention to.
+    The end-to-end data pipeline that generates scientifically credible synthetic sensor failure
+    signatures (temperature drift, vibration spikes, partial discharge) using real transformer-failure
+    physics, combined with an interactive React dashboard that surfaces risk-ranked assets on a live
+    Leaflet map with SHAP-explained predictions. The tight separation between data generation, SQLite
+    database, and frontend means the system is ready to replace mock data with real SCADA feeds with
+    minimal changes.
 
   known_limitations: >                 # Optional but recommended — be honest about gaps
-    Replace with any known limitations, incomplete features,
-    or shortcuts taken due to time constraints.
+    The FastAPI backend is planned but not yet wired up; the frontend currently runs on rich mock data.
+    The XGBoost model scoring is embedded in the data-generation pipeline rather than as a deployed
+    inference endpoint. Authentication is not implemented. The app has been tested on Chrome and Firefox
+    only. Live weather integration requires a free OpenWeatherMap API key; synthetic weather is the default.
 
 # =============================================================================
 # ARTIFACT LOCATIONS

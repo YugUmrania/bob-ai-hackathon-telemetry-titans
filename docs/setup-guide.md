@@ -6,74 +6,148 @@
 
 Before you begin, ensure you have the following installed:
 
-- [ ] [e.g., Python 3.11+]
-- [ ] [e.g., Node.js 18+]
-- [ ] [e.g., Docker Desktop]
-- [ ] [e.g., An IBM Cloud account with watsonx.ai access]
+- [ ] **Python 3.11+** — [python.org/downloads](https://www.python.org/downloads/)
+- [ ] **Node.js 18+** (includes npm) — [nodejs.org](https://nodejs.org/)
+- [ ] **Git**
+
+No Docker, no cloud accounts, and no paid API keys are required to run the full demo.  
+An OpenWeatherMap free API key is **optional** for live weather data (synthetic weather is the default).
+
+---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in the values:
+### Data pipeline (`src/` root)
+
+Copy `src/.env.example` to `src/.env`:
 
 ```bash
-cp .env.example .env
+cp src/.env.example src/.env
 ```
 
 | Variable | Description | Required |
 |---|---|---|
-| `WATSONX_API_KEY` | Your IBM watsonx.ai API key | Yes |
-| `WATSONX_PROJECT_ID` | Your watsonx.ai project ID | Yes |
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `SLACK_WEBHOOK_URL` | Slack webhook for alerts | No |
+| `OPENWEATHERMAP_API_KEY` | Free API key from [openweathermap.org/api](https://openweathermap.org/api). Only needed if you want live 5-day forecast data instead of synthetic weather. | No |
 
-## Installation
+All other variables in `src/.env.example` (`WATSONX_API_KEY`, `DATABASE_URL`, etc.) are **not used** by the current implementation — they are template placeholders. Leave them as-is.
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/[your-org]/[your-repo].git
-cd [your-repo]
+### Frontend (`src/frontend/`)
 
-# 2. Install backend dependencies
-[your command — e.g.: pip install -r requirements.txt]
-
-# 3. Install frontend dependencies (if applicable)
-[your command — e.g.: cd frontend && npm install]
-
-# 4. Set up the database (if applicable)
-[your command — e.g.: python manage.py migrate]
-```
-
-## Running the Application
+Copy `src/frontend/.env.example` to `src/frontend/.env`:
 
 ```bash
-# Start the backend
-[your command — e.g.: uvicorn app.main:app --reload]
-
-# Start the frontend (in a separate terminal, if applicable)
-[your command — e.g.: cd frontend && npm run dev]
+cp src/frontend/.env.example src/frontend/.env
 ```
 
-The application will be available at: `http://localhost:[PORT]`
+| Variable | Description | Required |
+|---|---|---|
+| `VITE_API_BASE_URL` | Backend API base URL. Default `/api` is correct for local dev (mock mode). | Yes (default value works) |
 
-## Running Tests
+---
+
+## Installation & Running
+
+### Step 1 — Clone the repository
 
 ```bash
-[your test command — e.g.: pytest tests/ -v]
+git clone https://github.com/your-org/bob-ai-hackathon-telemetry-titans.git
+cd bob-ai-hackathon-telemetry-titans
 ```
 
-## Quick Demo (Optional)
-
-If you have a demo script or sample data to showcase the project quickly:
+### Step 2 — Generate the dataset (Python)
 
 ```bash
-[e.g.: python demo/seed_demo_data.py]
-[e.g.: open http://localhost:8000/demo]
+cd src/data
+pip install -r requirements.txt
+python run_all.py
 ```
+
+Expected output (takes ~4 seconds):
+
+```
+============================================================
+  Telemetry Titans - Data Generation Pipeline
+============================================================
+
+[1/6] Generating grid topology...
+  -> Saved src/data/processed/assets.csv
+[2/6] Generating weather alerts...
+  -> Saved src/data/processed/weather_alerts.csv
+[3/6] Generating sensor readings...
+  -> Saved src/data/processed/sensor_readings.csv
+[4/6] Generating historical incidents...
+  -> Saved src/data/processed/historical_incidents.csv
+[5/6] Generating grid zone metadata...
+  -> Saved src/data/processed/grid_zones.csv
+[6/6] Merging into SQLite database...
+============================================================
+  Pipeline complete in 3.8s
+  Output directory: src/data/processed
+============================================================
+```
+
+This writes CSVs to `src/data/processed/` and the SQLite database to `src/data/output/grid_data.db`.
+
+**Optional — verify data integrity:**
+
+```bash
+python verify_data.py
+```
+
+### Step 3 — Run the frontend dashboard
+
+Open a new terminal:
+
+```bash
+cd src/frontend
+cp .env.example .env        # uses default VITE_API_BASE_URL=/api
+npm install
+npm run dev
+```
+
+The dashboard will be available at: **`http://localhost:5173`**
+
+The frontend runs in **mock-data mode** by default (no backend required). All pages — Dashboard, Map View, Asset Table, Asset Detail, Maintenance Plan, Calendar, Weather, Settings — are fully functional with the rich mock dataset in `src/frontend/src/mock/`.
+
+---
+
+## Optional — Live Weather Data
+
+To replace synthetic weather alerts with real OpenWeatherMap 5-day forecasts:
+
+1. Register for a free key at <https://openweathermap.org/api> (the free "Current Weather & Forecast" tier is sufficient)
+2. Set `OPENWEATHERMAP_API_KEY=your_key_here` in `src/.env`
+3. From `src/data/`:
+
+```bash
+python fetch_weather.py
+```
+
+This replaces `src/data/processed/weather_alerts.csv` with live forecast data, then re-run `python merge_to_db.py` to update the SQLite database.
+
+---
+
+## Running Tests / Validation
+
+```bash
+# From src/data/ — validates row counts, ID formats, cross-file consistency
+python verify_data.py
+
+# Frontend lint
+cd src/frontend
+npm run lint
+```
+
+---
 
 ## Troubleshooting
 
 | Issue | Solution |
 |---|---|
-| [e.g., `ModuleNotFoundError`] | [e.g., Run `pip install -r requirements.txt` again] |
-| [e.g., Database connection refused] | [e.g., Ensure PostgreSQL is running: `docker compose up db`] |
-| [e.g., watsonx.ai 401 error] | [e.g., Check `WATSONX_API_KEY` in your `.env` file] |
+| `ModuleNotFoundError: No module named 'pandas'` | Run `pip install -r requirements.txt` from `src/data/` |
+| `python: command not found` | Use `python3` instead, or ensure Python 3.11 is on your PATH |
+| `npm: command not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org/) |
+| `npm install` fails with ERESOLVE | Run `npm install --legacy-peer-deps` |
+| Blank map on the Map View page | Check browser console — Leaflet requires a valid tile URL. The default OpenStreetMap tiles need internet access. |
+| `verify_data.py` reports missing processed files | Run `python run_all.py` first to generate the CSVs |
+| Frontend shows "Failed to fetch" error | This is expected in mock mode — the API client falls back to mock data automatically. Check `src/frontend/src/store/useAppStore.ts` if you want to debug further. |
