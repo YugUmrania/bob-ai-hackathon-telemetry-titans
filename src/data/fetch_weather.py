@@ -34,9 +34,11 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-# Load .env if present
+# Load .env if present — prefer src/data/.env (where the real key lives),
+# fall back to src/.env
 try:
     from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent / ".env")
     load_dotenv(Path(__file__).parent.parent / ".env")
 except ImportError:
     pass
@@ -190,7 +192,7 @@ def _group_into_events(slots: list[dict], zone: str) -> list[dict]:
             "max_wind_kmh":    max_wind   if max_wind  > 0 else None,
             "max_temp_c":      max_temp   if peak_type == "heatwave" else None,
             "precipitation_mm":max_precip if max_precip > 0 else None,
-            "source":          "openweathermap",
+            "source":          "OpenWeatherMap",
         })
 
         i = j  # skip all absorbed slots

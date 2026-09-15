@@ -90,8 +90,10 @@ logs/
 # Re-include the source-code data pipeline (unignore after the data/ rule above)
 !src/data/
 !src/data/**
-# ...but keep cache/build artifacts out
+# ...but keep cache/build artifacts and secrets out
 src/data/__pycache__/
+src/data/.env
+src/frontend/.env
 
 # ── Generated dataset output (regenerate with src/data/run_all.py) ───────────
 src/data/processed/
