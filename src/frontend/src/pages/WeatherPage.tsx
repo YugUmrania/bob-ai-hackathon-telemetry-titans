@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Cloud,
@@ -668,6 +668,135 @@ function PrecautionaryMeasures() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Live weather by state (direct OWM)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type LiveAlert = {
+  zone: string;
+  alert_type: string | null;
+  severity: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  max_wind_kmh: number | null;
+  max_temp_c: number | null;
+  precipitation_mm: number | null;
+};
+
+const SEV_BG: Record<string, string> = {
+  critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+  high:     'bg-orange-500/15 text-orange-400 border-orange-500/30',
+  medium:   'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+  low:      'bg-green-500/15 text-green-400 border-green-500/30',
+};
+
+function LiveWeatherPanel() {
+  const base = import.meta.env.VITE_API_BASE_URL ?? '';
+  const [areas, setAreas] = useState<{ name: string; region_label: string }[]>([]);
+  const [area, setArea] = useState('');
+  const [alerts, setAlerts] = useState<LiveAlert[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    fetch(`${base}/api/v1/weather/areas`).then((r) => (r.ok ? r.json() : [])).then((d) => {
+      setAreas(d);
+      if (d.length) setArea(d[0].name);
+    });
+  }, [base]);
+
+  useEffect(() => {
+    if (!area) return;
+    setLoading(true);
+    fetch(`${base}/api/v1/weather/live?area=${encodeURIComponent(area)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setAlerts)
+      .finally(() => setLoading(false));
+  }, [area, base, refreshKey]);
+
+  const byZone = useMemo(() => {
+    const grouped: Record<string, LiveAlert[]> = {};
+    for (const a of alerts) {
+      (grouped[a.zone] ??= []).push(a);
+    }
+    return grouped;
+  }, [alerts]);
+
+  return (
+    <section className="card p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Cloud size={15} className="text-brand-400" />
+          <h2 className="text-sm font-semibold text-white">Live Weather by State</h2>
+          <span className="text-[10px] text-slate-500 ml-1">{alerts.length} alerts</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              className="select-dark pr-8 text-xs"
+              aria-label="Select state"
+            >
+              {areas.map((a) => (
+                <option key={a.name} value={a.name}>{a.name}</option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">▾</span>
+          </div>
+          <button
+            onClick={() => setRefreshKey((k) => k + 1)}
+            className="p-2 rounded-lg bg-navy-800 border border-surface-border/50 text-slate-400 hover:text-white hover:bg-navy-700 transition-colors"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+
+      {loading && <p className="text-xs text-slate-500">Fetching live forecast…</p>}
+      {!loading && alerts.length === 0 && <p className="text-xs text-slate-500">No alerts for this area.</p>}
+
+      {!loading && alerts.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+          {(['North', 'South', 'East', 'West', 'Central'] as const).map((z) => {
+            const zoneAlerts = byZone[z] ?? [];
+            return (
+              <div
+                key={z}
+                className="bg-navy-900 rounded-xl p-3 border border-surface-border/50"
+              >
+                <p className="text-xs font-semibold text-slate-300 mb-2">{z} Zone</p>
+                {zoneAlerts.length === 0 && (
+                  <p className="text-[10px] text-slate-600">No alerts</p>
+                )}
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                  {zoneAlerts.map((a, i) => (
+                    <div key={i} className="rounded-lg bg-navy-800 border border-surface-border/30 p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-semibold text-slate-200 uppercase">{a.alert_type}</span>
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${SEV_BG[(a.severity ?? '').toLowerCase()] ?? ''}`}>
+                          {a.severity}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500">{a.start_time} → {a.end_time}</p>
+                      <div className="flex gap-2 mt-1 text-[10px] text-slate-400">
+                        {a.max_wind_kmh != null && <span>💨 {a.max_wind_kmh} km/h</span>}
+                        {a.max_temp_c != null && <span>🌡 {a.max_temp_c}°C</span>}
+                        {a.precipitation_mm != null && <span>💧 {a.precipitation_mm} mm</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main WeatherPage
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -809,6 +938,9 @@ export function WeatherPage() {
         <CurrentWeatherCard />
         <ForecastStrip range={forecastRange} />
       </div>
+
+      {/* ── Live weather by state ── */}
+      <LiveWeatherPanel />
 
       {/* ── Weather risk indicators ── */}
       <section>

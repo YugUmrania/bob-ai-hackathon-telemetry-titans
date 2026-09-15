@@ -86,5 +86,8 @@ class WeatherAlertOut(BaseModel):
     severity: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    max_wind_kmh: Optional[float] = None
+    max_temp_c: Optional[float] = None
+    precipitation_mm: Optional[float] = None
 
     model_config = {"from_attributes": True}
