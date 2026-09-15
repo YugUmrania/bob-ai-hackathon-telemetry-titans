@@ -33,7 +33,7 @@ export function GridMap({
   assets,
   selectedAssetId,
   onAssetSelect,
-  center = [41.87, -87.65],
+  center = [28.6139, 77.2090],
   zoom = 11,
   height = '100%',
 }: GridMapProps) {
