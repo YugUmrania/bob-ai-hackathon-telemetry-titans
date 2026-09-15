@@ -35,20 +35,42 @@ const MONTHS = [
 const MOCK_TODAY = '2026-09-15';
 const MOCK_TODAY_DATE = new Date(2026, 8, 15); // Sept 15, 2026
 
-// Risk-level event card colours — enterprise-readable, per spec
-const riskEventStyle: Record<RiskLevel, { bg: string; border: string; text: string; dot: string }> = {
+/** Returns true when the active theme uses a dark background */
+function isDarkTheme(): boolean {
+  const t = document.documentElement.getAttribute('data-theme') ?? 'dark';
+  return t === 'dark' || t === 'hc-dark';
+}
+
+// Risk-level event card colours — light theme (default)
+const riskEventStyleLight: Record<RiskLevel, { bg: string; border: string; text: string; dot: string }> = {
   critical: { bg: '#FEE2E2', border: '#FCA5A5', text: '#991B1B', dot: '#DC2626' },
   high:     { bg: '#FFEDD5', border: '#FDBA74', text: '#9A3412', dot: '#F97316' },
   medium:   { bg: '#FEF3C7', border: '#FCD34D', text: '#92400E', dot: '#EAB308' },
   low:      { bg: '#DCFCE7', border: '#86EFAC', text: '#166534', dot: '#16A34A' },
 };
 
-// Legend dot colours
-const legendDots: { level: RiskLevel; label: string; color: string }[] = [
+// Risk-level event card colours — dark / hc-dark theme (token-based)
+const riskEventStyleDark: Record<RiskLevel, { bg: string; border: string; text: string; dot: string }> = {
+  critical: { bg: 'var(--risk-critical-bg)', border: 'color-mix(in srgb, var(--risk-critical) 45%, transparent)', text: 'var(--risk-critical-text)', dot: 'var(--risk-critical)' },
+  high:     { bg: 'var(--risk-high-bg)',     border: 'color-mix(in srgb, var(--risk-high) 45%, transparent)',     text: 'var(--risk-high-text)',     dot: 'var(--risk-high)' },
+  medium:   { bg: 'var(--risk-medium-bg)',   border: 'color-mix(in srgb, var(--risk-medium) 45%, transparent)',   text: 'var(--risk-medium-text)',   dot: 'var(--risk-medium)' },
+  low:      { bg: 'var(--risk-low-bg)',      border: 'color-mix(in srgb, var(--risk-low) 45%, transparent)',      text: 'var(--risk-low-text)',      dot: 'var(--risk-low)' },
+};
+
+// Legend dot colours — light theme
+const legendDotsLight: { level: RiskLevel; label: string; color: string }[] = [
   { level: 'critical', label: 'Critical', color: '#DC2626' },
   { level: 'high',     label: 'High',     color: '#F97316' },
   { level: 'medium',   label: 'Medium',   color: '#EAB308' },
   { level: 'low',      label: 'Low',      color: '#16A34A' },
+];
+
+// Legend dot colours — dark / hc-dark theme
+const legendDotsDark: { level: RiskLevel; label: string; color: string }[] = [
+  { level: 'critical', label: 'Critical', color: 'var(--risk-critical)' },
+  { level: 'high',     label: 'High',     color: 'var(--risk-high)' },
+  { level: 'medium',   label: 'Medium',   color: 'var(--risk-medium)' },
+  { level: 'low',      label: 'Low',      color: 'var(--risk-low)' },
 ];
 
 const statusLabels: Record<CalTaskStatus, string> = {
@@ -87,7 +109,7 @@ function EventChip({
   onClick: (t: CalendarTask) => void;
   isSelected: boolean;
 }) {
-  const c = riskEventStyle[task.risk_level];
+  const c = (isDarkTheme() ? riskEventStyleDark : riskEventStyleLight)[task.risk_level];
 
   return (
     <button
@@ -97,7 +119,7 @@ function EventChip({
         background: c.bg,
         borderColor: c.border,
         color: c.text,
-        outline: isSelected ? '2px solid #2457b8' : 'none',
+        outline: isSelected ? '2px solid var(--accent)' : 'none',
         outlineOffset: isSelected ? '1px' : '0',
       }}
       title={`${task.title}\n${task.asset_id} · ${task.zone}\n${task.start_time}–${task.end_time}`}
@@ -519,7 +541,7 @@ function ListView({
         </thead>
         <tbody>
           {sorted.map((task) => {
-            const c = riskEventStyle[task.risk_level];
+            const c = (isDarkTheme() ? riskEventStyleDark : riskEventStyleLight)[task.risk_level];
             const status = statuses[task.id] ?? task.status;
             return (
               <tr
@@ -913,7 +935,7 @@ export function CalendarPage() {
           <span className="cal-legend-total">
             Total: {filteredTasks.length} tasks
           </span>
-          {legendDots.map(({ level, label, color }) => (
+          {(isDarkTheme() ? legendDotsDark : legendDotsLight).map(({ level, label, color }) => (
             <span key={level} className="cal-legend-item">
               <span className="cal-legend-dot" style={{ background: color }} />
               {label} ({legendCounts[level]})

@@ -15,6 +15,12 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { RiskBadge, StatusBadge } from '../components/ui/StatusBadge';
 import { GridMap } from '../components/map/GridMap';
 
+/** Returns true when the active theme is any dark-background variant */
+function isDarkTheme(): boolean {
+  const t = document.documentElement.getAttribute('data-theme') ?? 'dark';
+  return t === 'dark' || t === 'hc-dark';
+}
+
 export function Dashboard() {
   const loadData = useAppStore((s) => s.loadData);
   const isLoading = useAppStore((s) => s.isLoading);
@@ -231,7 +237,12 @@ export function Dashboard() {
           </div>
           <div className="divide-y divide-surface-border/50">
             {upcomingTasks.map((task) => {
-              const priorityStyles: Record<string, { bg: string; border: string; color: string }> = {
+              const dark = isDarkTheme();
+              const priorityStyles: Record<string, { bg: string; border: string; color: string }> = dark ? {
+                emergency: { bg: 'rgba(204,34,34,0.18)',   border: 'rgba(204,34,34,0.4)',   color: 'var(--risk-critical-text)' },
+                urgent:    { bg: 'rgba(200,90,0,0.18)',    border: 'rgba(200,90,0,0.4)',    color: 'var(--risk-high-text)' },
+                routine:   { bg: 'rgba(36,87,184,0.18)',   border: 'rgba(36,87,184,0.4)',   color: 'var(--accent-text)' },
+              } : {
                 emergency: { bg: '#FEE2E2', border: '#FCA5A5', color: '#991B1B' },
                 urgent:    { bg: '#FFEDD5', border: '#FDBA74', color: '#9A3412' },
                 routine:   { bg: '#DBEAFE', border: '#93C5FD', color: '#1E40AF' },

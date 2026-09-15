@@ -726,6 +726,13 @@ body {
 [data-theme="hc-light"] .hover\:bg-white\/10:hover {
   background-color: rgba(0,0,0,0.07) !important;
 }
+/* hc-dark: white/5 overlays are invisible on black — use a visible grey */
+[data-theme="hc-dark"] .hover\:bg-white\/5:hover {
+  background-color: rgba(255,255,255,0.10) !important;
+}
+[data-theme="hc-dark"] .hover\:bg-white\/10:hover {
+  background-color: rgba(255,255,255,0.15) !important;
+}
 
 /* Calendar event chips in light mode */
 [data-theme="light"] .bg-navy-700,
@@ -810,8 +817,9 @@ body {
   min-height: 100%;
   background: #F4F7FA;
 }
-[data-theme="dark"] .cal-page { background: var(--bg-base); }
-[data-theme="hc-dark"] .cal-page { background: #000; }
+[data-theme="dark"]    .cal-page { background: var(--bg-base); }
+[data-theme="hc-dark"] .cal-page { background: var(--bg-base); }
+[data-theme="hc-light"] .cal-page { background: var(--bg-base); }
 
 .cal-content {
   flex: 1;
@@ -832,8 +840,12 @@ body {
   color: #1E293B;
   font-weight: 500;
 }
-[data-theme="dark"] .cal-breadcrumb { color: var(--text-muted); }
-[data-theme="dark"] .cal-breadcrumb-current { color: var(--text-primary); }
+[data-theme="dark"]    .cal-breadcrumb { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-breadcrumb { color: var(--text-muted); }
+[data-theme="hc-light"] .cal-breadcrumb { color: var(--text-muted); }
+[data-theme="dark"]    .cal-breadcrumb-current { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-breadcrumb-current { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-breadcrumb-current { color: var(--text-primary); }
 
 /* ── Page header ────────────────────────────────────────────────────────── */
 .cal-page-header {
@@ -852,7 +864,9 @@ body {
 .cal-title-icon {
   color: #2457B8;
 }
-[data-theme="dark"] .cal-title-icon { color: var(--accent-text); }
+[data-theme="dark"]    .cal-title-icon { color: var(--accent-text); }
+[data-theme="hc-dark"] .cal-title-icon { color: var(--accent-text); }
+[data-theme="hc-light"] .cal-title-icon { color: var(--accent-text); }
 
 .cal-page-title {
   font-size: 24px;
@@ -2033,3 +2047,191 @@ body {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HIGH CONTRAST DARK — CALENDAR & DASHBOARD OVERRIDES
+   Every [data-theme="dark"] cal-* / dash-* rule that was missing an
+   hc-dark twin is covered here. All values reference CSS tokens so they
+   automatically use the hc-dark palette defined at the top of this file.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Calendar: page text / header ─────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-page-title        { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-page-subtitle     { color: var(--text-muted); }
+
+/* ── Calendar: filter bar ─────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-filter-bar        { background: var(--bg-surface); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-filter-label      { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-filter-search-icon{ color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-filter-input      { background: var(--bg-input); border-color: var(--border-input); color: var(--text-primary); border-width: 2px; }
+[data-theme="hc-dark"] .cal-filter-input::placeholder { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+[data-theme="hc-dark"] .cal-filter-select     { background-color: var(--bg-input); border-color: var(--border-input); color: var(--text-primary); border-width: 2px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e5e5e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+[data-theme="hc-dark"] .cal-filter-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* ── Calendar: buttons ────────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-btn-clear         { background: var(--bg-surface); color: var(--text-secondary); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-btn-clear:hover   { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+[data-theme="hc-dark"] .cal-nav-btn           { background: var(--bg-surface); color: var(--text-secondary); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-nav-btn:hover     { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+[data-theme="hc-dark"] .cal-month-title       { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-view-toggle       { border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-view-btn          { background: var(--bg-surface); color: var(--text-secondary); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-view-btn:hover    { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── Calendar: grid (month view) ─────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-grid-container    { border-color: var(--border-strong); background: var(--bg-surface); }
+[data-theme="hc-dark"] .cal-grid-header       { background: var(--bg-surface-alt); border-color: var(--border-strong); }
+[data-theme="hc-dark"] .cal-grid-header-cell  { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-grid-cell         { border-color: var(--border-default); background: var(--bg-surface); }
+[data-theme="hc-dark"] .cal-grid-cell-other   { background: var(--bg-surface-alt); }
+[data-theme="hc-dark"] .cal-grid-cell-today   { background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface)); }
+[data-theme="hc-dark"] .cal-current-month-day { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-other-month-day   { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-today-badge       { background: var(--accent); color: var(--text-inverse); }
+[data-theme="hc-dark"] .cal-more-btn          { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-more-btn:hover    { color: var(--accent-text); }
+
+/* ── Calendar: week view ─────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-week-container      { border-color: var(--border-strong); background: var(--bg-surface); }
+[data-theme="hc-dark"] .cal-week-day            { border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-week-day-today      { background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface)); }
+[data-theme="hc-dark"] .cal-week-day-header     { background: var(--bg-surface-alt); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-week-day-header-today { background: color-mix(in srgb, var(--accent) 18%, var(--bg-surface-alt)); }
+[data-theme="hc-dark"] .cal-week-dayname        { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-week-daynum         { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-week-empty          { color: var(--text-muted); }
+
+/* ── Calendar: list view ─────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-list-container            { border-color: var(--border-strong); background: var(--bg-surface); }
+[data-theme="hc-dark"] .cal-list-table thead tr       { background: var(--bg-surface-alt); border-color: var(--border-strong); }
+[data-theme="hc-dark"] .cal-list-table th             { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-list-table td             { border-color: var(--border-default); color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-list-table tbody tr:hover { background: var(--bg-hover); }
+[data-theme="hc-dark"] .cal-list-row-selected         { background: color-mix(in srgb, var(--accent) 15%, var(--bg-surface)) !important; outline-color: var(--accent); }
+[data-theme="hc-dark"] .cal-list-status-scheduled     { color: var(--text-secondary); }
+[data-theme="hc-dark"] .cal-list-status-in_progress   { color: var(--accent-text); }
+[data-theme="hc-dark"] .cal-list-action-btn           { background: var(--bg-surface-alt); color: var(--accent-text); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-list-empty                { background: var(--bg-surface); border-color: var(--border-default); color: var(--text-muted); }
+
+/* ── Calendar: legend ────────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-legend-total { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-legend-item  { color: var(--text-secondary); }
+
+/* ── Calendar: drawer ────────────────────────────────────────────────── */
+[data-theme="hc-dark"] .cal-drawer-overlay    { background: rgba(0,0,0,0.7); }
+[data-theme="hc-dark"] .cal-drawer            { background: var(--bg-surface); border-color: var(--border-strong); box-shadow: -4px 0 20px rgba(0,0,0,0.6); }
+[data-theme="hc-dark"] .cal-drawer-header     { border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-drawer-task-id    { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-drawer-task-title { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-drawer-task-mtype { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-drawer-close-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-drawer-badges     { background: var(--bg-surface-alt); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-drawer-status-badge { background: var(--bg-surface); color: var(--text-secondary); border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-drawer-section-icon  { color: var(--accent-text); }
+[data-theme="hc-dark"] .cal-drawer-section-title { color: var(--text-secondary); }
+[data-theme="hc-dark"] .cal-drawer-row            { border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-drawer-row-label      { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-drawer-row-value      { color: var(--text-primary); }
+[data-theme="hc-dark"] .cal-drawer-sublabel       { color: var(--text-muted); }
+[data-theme="hc-dark"] .cal-drawer-subtext        { color: var(--text-secondary); }
+[data-theme="hc-dark"] .cal-drawer-precautions li { color: var(--text-secondary); }
+[data-theme="hc-dark"] .cal-drawer-actions        { border-color: var(--border-default); }
+[data-theme="hc-dark"] .cal-drawer-btn-complete   { background: rgba(0,221,68,0.15); color: #44ff88; border-color: rgba(0,221,68,0.35); }
+[data-theme="hc-dark"] .cal-drawer-btn-reschedule { background: rgba(255,170,0,0.15); color: #ffdd00; border-color: rgba(255,170,0,0.35); }
+[data-theme="hc-dark"] .cal-drawer-btn-asset      { background: rgba(77,166,255,0.15); color: var(--accent-text); border-color: rgba(77,166,255,0.35); }
+[data-theme="hc-dark"] .cal-drawer-btn-close      { background: var(--bg-surface-alt); color: var(--text-secondary); border-color: var(--border-default); }
+
+/* ── Dashboard: hc-dark ──────────────────────────────────────────────── */
+[data-theme="hc-dark"] .dash-page            { background: transparent; }
+[data-theme="hc-dark"] .dash-icon-accent     { color: var(--accent-text); }
+[data-theme="hc-dark"] .dash-card-heading    { color: var(--text-primary); }
+[data-theme="hc-dark"] .dash-card-link       { color: var(--accent-text); }
+[data-theme="hc-dark"] .dash-card-link:hover { color: var(--accent-hover); }
+[data-theme="hc-dark"] .dash-section-label   { color: var(--text-secondary); }
+[data-theme="hc-dark"] .dash-big-number      { color: var(--text-primary); }
+[data-theme="hc-dark"] .dash-text-primary    { color: var(--text-primary); }
+[data-theme="hc-dark"] .dash-secondary-text  { color: var(--text-secondary); }
+[data-theme="hc-dark"] .dash-muted-text      { color: var(--text-muted); }
+[data-theme="hc-dark"] .dash-dimmed-text     { color: var(--text-muted); }
+[data-theme="hc-dark"] .dash-progress-track  { background: var(--bg-surface-alt); }
+[data-theme="hc-dark"] .dash-alert-banner    { background: rgba(255,170,0,0.15); border-color: rgba(255,170,0,0.4); color: #ffdd00; }
+[data-theme="hc-dark"] .dash-alert-icon      { color: #ffaa00; }
+[data-theme="hc-dark"] .dash-alert-title     { color: #ffdd00; }
+[data-theme="hc-dark"] .dash-alert-pct       { color: #ffaa00; }
+[data-theme="hc-dark"] .dash-alert-subtitle  { color: rgba(255,221,0,0.7); }
+[data-theme="hc-dark"] .dash-table-row:hover { background: var(--bg-hover); }
+[data-theme="hc-dark"] .dash-row-index       { color: var(--text-muted); }
+[data-theme="hc-dark"] .dash-row-title       { color: var(--text-primary); }
+[data-theme="hc-dark"] .dash-row-score       { color: var(--text-primary); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HIGH CONTRAST LIGHT — CALENDAR & DASHBOARD OVERRIDES
+   The base light rules mostly work, but a few need stronger contrast or
+   explicit token references instead of bare hex.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Calendar: page text ─────────────────────────────────────────────── */
+[data-theme="hc-light"] .cal-page-title        { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-page-subtitle     { color: var(--text-muted); }
+[data-theme="hc-light"] .cal-filter-label      { color: var(--text-muted); }
+[data-theme="hc-light"] .cal-filter-search-icon{ color: var(--text-muted); }
+[data-theme="hc-light"] .cal-filter-input      { border-width: 2px; border-color: var(--border-input); }
+[data-theme="hc-light"] .cal-filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
+[data-theme="hc-light"] .cal-filter-select     { border-width: 2px; border-color: var(--border-input); }
+[data-theme="hc-light"] .cal-filter-select:focus { border-color: var(--accent); }
+[data-theme="hc-light"] .cal-filter-bar        { border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-nav-btn           { border-color: var(--border-default); color: var(--text-secondary); }
+[data-theme="hc-light"] .cal-nav-btn:hover     { background: var(--bg-hover); border-color: var(--border-strong); color: var(--text-primary); }
+[data-theme="hc-light"] .cal-month-title       { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-view-toggle       { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-view-btn          { border-color: var(--border-default); color: var(--text-secondary); }
+[data-theme="hc-light"] .cal-view-btn:hover    { background: var(--bg-hover); color: var(--text-primary); }
+[data-theme="hc-light"] .cal-grid-container    { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-grid-header       { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-grid-cell         { border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-grid-header-cell  { color: var(--text-secondary); }
+[data-theme="hc-light"] .cal-current-month-day { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-other-month-day   { color: var(--text-muted); }
+[data-theme="hc-light"] .cal-today-badge       { background: var(--accent); color: var(--text-inverse); }
+[data-theme="hc-light"] .cal-week-container    { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-week-day          { border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-week-dayname      { color: var(--text-muted); }
+[data-theme="hc-light"] .cal-week-daynum       { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-list-container    { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-list-table thead tr { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-list-table th     { color: var(--text-secondary); }
+[data-theme="hc-light"] .cal-list-table td     { color: var(--text-primary); border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-list-table tbody tr:hover { background: var(--bg-hover); }
+[data-theme="hc-light"] .cal-legend-total      { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-legend-item       { color: var(--text-secondary); }
+[data-theme="hc-light"] .cal-drawer            { border-color: var(--border-strong); }
+[data-theme="hc-light"] .cal-drawer-task-title { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-drawer-row-value  { color: var(--text-primary); }
+[data-theme="hc-light"] .cal-drawer-row        { border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-btn-clear         { border-color: var(--border-default); }
+[data-theme="hc-light"] .cal-btn-clear:hover   { background: var(--bg-hover); border-color: var(--border-strong); }
+
+/* ── Dashboard: hc-light ─────────────────────────────────────────────── */
+[data-theme="hc-light"] .dash-page            { background: var(--bg-base); }
+[data-theme="hc-light"] .dash-icon-accent     { color: var(--accent-text); }
+[data-theme="hc-light"] .dash-card-heading    { color: var(--text-primary); }
+[data-theme="hc-light"] .dash-card-link       { color: var(--accent-text); }
+[data-theme="hc-light"] .dash-card-link:hover { color: var(--accent-hover); }
+[data-theme="hc-light"] .dash-section-label   { color: var(--text-secondary); }
+[data-theme="hc-light"] .dash-big-number      { color: var(--text-primary); }
+[data-theme="hc-light"] .dash-text-primary    { color: var(--text-primary); }
+[data-theme="hc-light"] .dash-secondary-text  { color: var(--text-secondary); }
+[data-theme="hc-light"] .dash-muted-text      { color: var(--text-muted); }
+[data-theme="hc-light"] .dash-dimmed-text     { color: var(--text-muted); }
+[data-theme="hc-light"] .dash-progress-track  { background: var(--bg-surface-alt); }
+[data-theme="hc-light"] .dash-alert-banner    { background: rgba(136,102,0,0.10); border-color: rgba(136,102,0,0.4); color: #665200; }
+[data-theme="hc-light"] .dash-alert-icon      { color: #886600; }
+[data-theme="hc-light"] .dash-alert-title     { color: #665200; }
+[data-theme="hc-light"] .dash-alert-pct       { color: #886600; }
+[data-theme="hc-light"] .dash-alert-subtitle  { color: #885500; }
+[data-theme="hc-light"] .dash-table-row:hover { background: var(--bg-hover); }
+[data-theme="hc-light"] .dash-row-index       { color: var(--text-muted); }
+[data-theme="hc-light"] .dash-row-title       { color: var(--text-primary); }
+[data-theme="hc-light"] .dash-row-score       { color: var(--text-primary); }
